@@ -6,7 +6,7 @@ This tool is designed to automate the management of SSL certificates for your do
 ## Prerequisites
 
 1. **Python**: The script is written in Python and requires Python 3.x.
-2. **AWS CLI**: The script interacts with Amazon S3 for backup purposes. Ensure you have AWS CLI installed and configured with the necessary credentials.
+2. **AWS CLI**(https://github.com/mustaphaibnel/ssl-automate-manager-python/tree/main): The script interacts with Amazon S3 for backup purposes. Ensure you have AWS CLI installed and configured with the necessary credentials.
 3. **Nginx or Apache**: The script can set up configurations for either of these web servers. Ensure you have the web server of your choice installed.
 4. **Certbot**: The script uses Certbot to obtain certificates from Let's Encrypt.
 5. **Boto3**: The Python SDK for AWS. It's used to interact with the Amazon S3 service.
