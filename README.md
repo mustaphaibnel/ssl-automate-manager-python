@@ -86,6 +86,41 @@ python-crontab==2.5.1
    pip install -r requirements.txt
    ```
 
+
+### Domain and Port Mapping Verification
+
+After setting up your SSL certificates and Nginx configurations, it’s vital to verify that all domains and subdomains are correctly configured and mapped to their respective ports. We've included a handy script, `list_domain_port_nginx.py`, to assist in this verification process by listing all the configured domains along with their mapped ports and proxy pass destinations.
+
+#### Usage
+
+Execute the script like so:
+
+```bash
+./list_domain_port_nginx.py
+```
+
+#### Example Output
+
+Here is a sample output displaying the list of domains along with their corresponding configurations:
+
+```bash
++--------------------------+--------------------------+-----------------------+---------------+
+| Filename                 | Domain                   | Proxy Pass            |   Listen Port |
++==========================+==========================+=======================+===============+
+| example1.com             | example1.com             | http://localhost:9000 |          9000 |
++--------------------------+--------------------------+-----------------------+---------------+
+| sub.example2.com         | sub.example2.com         | http://localhost:9001 |          9001 |
++--------------------------+--------------------------+-----------------------+---------------+
+| example3.com             | example3.com             | http://localhost:9000 |          9000 |
++--------------------------+--------------------------+-----------------------+---------------+
+| sub.example4.com         | sub.example4.com         | http://localhost:9000 |          9000 |
++--------------------------+--------------------------+-----------------------+---------------+
+| app.example5.com         | app.example5.com         | http://localhost:9001 |          9001 |
++--------------------------+--------------------------+-----------------------+---------------+
+```
+
+This table provides a clear view of the mapping between domains, their respective listening ports, and proxy pass configurations. Ensure to review this output to confirm that your domains and ports are configured as expected. If any discrepancies are detected, revisit your configurations to make the necessary adjustments.
+
 ### Note
 
 - The `boto3` and `botocore` packages are for AWS S3 interactions.
