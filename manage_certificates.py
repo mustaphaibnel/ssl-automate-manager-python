@@ -8,6 +8,7 @@ from datetime import datetime
 import socket
 import tarfile
 import sys
+from crontab import CronTab
 
 def check_certificate_local(domain):
     cert_dir = f"/etc/letsencrypt/live/{domain}"
@@ -62,14 +63,27 @@ def backup_letsencrypt(s3_bucket_name):
     print(f"Backup uploaded to S3 bucket {s3_bucket_name} successfully.")
 
 
+def set_cron_job(script_path):
+    cron = CronTab(user='root')
+    job = cron.new(command=f'python3 {script_path}')
+    job.setall('0 0 * * 0')
+    cron.write()
+
+
 def main():
     parser = argparse.ArgumentParser(description="SSL certificate management with AWS S3 backup.")
     parser.add_argument("--domains", required=True, nargs='+', help="List of domains or subdomains.")
     parser.add_argument("--email", required=True, help="Email for Let's Encrypt.")
     parser.add_argument("--s3-bucket", required=True, help="S3 bucket for certificate backup.")
+    parser.add_argument("--set-cron", action='store_true', help="Set a weekly cron job to run this script.")
 
     args = parser.parse_args()
     s3_bucket_name = args.s3_bucket
+
+    if args.set_cron:
+        set_cron_job(os.path.abspath(__file__))
+        print("A weekly cron job has been set to run this script.")
+        sys.exit(0)
 
     for domain in args.domains:
         if check_certificate_local(domain):
