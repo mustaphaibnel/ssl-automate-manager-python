@@ -77,64 +77,64 @@ def backup_to_s3(domain, s3_bucket):
             print(f"Certificate for {domain} backed up to S3.")
 
 
-            def setup_nginx(domain, port):
-            config = f"""
-        server {{
-            listen 80;
-            server_name {domain};
-            return 301 https://{domain}$request_uri;
-        }}
-        
-        server {{
-            listen 443 ssl;
-            server_name {domain};
-        
-            ssl_certificate /etc/letsencrypt/live/{domain}/fullchain.pem;
-            ssl_certificate_key /etc/letsencrypt/live/{domain}/privkey.pem;
-        
-            location / {{
-                proxy_pass http://localhost:{port};
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-            }}
-        }}
-            """
-            with open(f"/etc/nginx/sites-available/{domain}", "w") as file:
-                file.write(config)
-        
-            if os.path.exists(f"/etc/nginx/sites-enabled/{domain}"):
-                os.remove(f"/etc/nginx/sites-enabled/{domain}")
-            os.symlink(f"/etc/nginx/sites-available/{domain}", f"/etc/nginx/sites-enabled/{domain}")
-            call(["nginx", "-s", "reload"])
-        
-        
-        def setup_apache(domain, port):
-            config = f"""
-        <VirtualHost *:80>
-            ServerName {domain}
-            Redirect permanent / https://{domain}/
-        </VirtualHost>
-        
-        <VirtualHost *:443>
-            ServerName {domain}
-        
-            SSLEngine on
-            SSLCertificateFile /etc/letsencrypt/live/{domain}/fullchain.pem
-            SSLCertificateKeyFile /etc/letsencrypt/live/{domain}/privkey.pem
-        
-            ProxyPreserveHost On
-            ProxyPass / http://localhost:{port}/
-            ProxyPassReverse / http://localhost:{port}/
-        </VirtualHost>
-            """
-            with open(f"/etc/apache2/sites-available/{domain}.conf", "w") as file:
-                file.write(config)
-        
-            if os.path.exists(f"/etc/apache2/sites-enabled/{domain}.conf"):
-                os.remove(f"/etc/apache2/sites-enabled/{domain}.conf")
-            os.symlink(f"/etc/apache2/sites-available/{domain}.conf", f"/etc/apache2/sites-enabled/{domain}.conf")
-            call(["apache2ctl", "configtest"])
-            call(["systemctl", "restart", "apache2"])
+def setup_nginx(domain, port):
+    config = f"""
+server {{
+    listen 80;
+    server_name {domain};
+    return 301 https://{domain}$request_uri;
+}}
+
+server {{
+    listen 443 ssl;
+    server_name {domain};
+
+    ssl_certificate /etc/letsencrypt/live/{domain}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{domain}/privkey.pem;
+
+    location / {{
+        proxy_pass http://localhost:{port};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }}
+}}
+    """
+    with open(f"/etc/nginx/sites-available/{domain}", "w") as file:
+        file.write(config)
+
+    if os.path.exists(f"/etc/nginx/sites-enabled/{domain}"):
+        os.remove(f"/etc/nginx/sites-enabled/{domain}")
+    os.symlink(f"/etc/nginx/sites-available/{domain}", f"/etc/nginx/sites-enabled/{domain}")
+    call(["nginx", "-s", "reload"])
+
+
+def setup_apache(domain, port):
+    config = f"""
+<VirtualHost *:80>
+    ServerName {domain}
+    Redirect permanent / https://{domain}/
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName {domain}
+
+    SSLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/{domain}/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/{domain}/privkey.pem
+
+    ProxyPreserveHost On
+    ProxyPass / http://localhost:{port}/
+    ProxyPassReverse / http://localhost:{port}/
+</VirtualHost>
+    """
+    with open(f"/etc/apache2/sites-available/{domain}.conf", "w") as file:
+        file.write(config)
+
+    if os.path.exists(f"/etc/apache2/sites-enabled/{domain}.conf"):
+        os.remove(f"/etc/apache2/sites-enabled/{domain}.conf")
+    os.symlink(f"/etc/apache2/sites-available/{domain}.conf", f"/etc/apache2/sites-enabled/{domain}.conf")
+    call(["apache2ctl", "configtest"])
+    call(["systemctl", "restart", "apache2"])
         
 
 def main():
