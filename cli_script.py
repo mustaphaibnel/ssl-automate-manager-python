@@ -82,7 +82,7 @@ def setup_nginx(domain, port):
 server {{
     listen 80;
     server_name {domain};
-    return 301 https://{domain}$request_uri;
+    return 301 https://$host$request_uri;
 }}
 
 server {{
@@ -91,11 +91,16 @@ server {{
 
     ssl_certificate /etc/letsencrypt/live/{domain}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/{domain}/privkey.pem;
-
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    
     location / {{
         proxy_pass http://localhost:{port};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
+        proxy_cache_bypass $http_upgrade;
     }}
 }}
     """
