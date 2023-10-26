@@ -53,13 +53,25 @@ def download_certificate_from_s3(domain, s3_bucket):
         os.system(f"rm -rf {cert_dir}")
         sys.exit(1)
 
-def get_certificate(domain, email, s3_bucket):
+def get_certificate_test(domain, email, s3_bucket):
     if not check_certificate_locally(domain):
         if check_certificate_on_s3(domain, s3_bucket):
             download_certificate_from_s3(domain, s3_bucket)
         else:
             print(f"Generating a new certificate for {domain}...")
             call(["certbot", "--nginx", "-d", domain, "--agree-tos", "-m", email])
+
+def get_certificate(domain, email, s3_bucket):
+    if not check_certificate_locally(domain):
+        if check_certificate_on_s3(domain, s3_bucket):
+            download_certificate_from_s3(domain, s3_bucket)
+            return True  # Since the cert is now locally available
+        else:
+            print(f"Generating a new certificate for {domain}...")
+            result = call(["certbot", "--nginx", "-d", domain, "--agree-tos", "-m", email])
+            return result == 0  # True if certbot command was successful
+    return True  # Certificate was found locally
+    
 
 def backup_to_s3(domain, s3_bucket):
     s3 = boto3.client('s3')
@@ -155,6 +167,19 @@ def main():
         print("Error: The number of domains must match the number of ports.")
         sys.exit(1)
 
+
+    for domain, port in zip(args.domains, args.ports):
+        cert_success = get_certificate(domain, args.email, args.s3_bucket)
+        if cert_success:
+            backup_to_s3(domain, args.s3_bucket)
+            if args.server == "nginx":
+                setup_nginx(domain, port)
+            else:
+                setup_apache(domain, port)
+        else:
+            print(f"Failed to obtain certificate for {domain}. Skipping server setup.")
+
+    """
     for domain, port in zip(args.domains, args.ports):
         get_certificate(domain, args.email, args.s3_bucket)
         backup_to_s3(domain, args.s3_bucket)
@@ -162,6 +187,6 @@ def main():
             setup_nginx(domain, port)
         else:
             setup_apache(domain, port)
-
+    """
 if __name__ == "__main__":
     main()
