@@ -66,7 +66,6 @@ Below is the `requirements.txt` file that includes all the necessary Python pack
 ```plaintext
 boto3==1.17.49
 botocore==1.20.49
-certbot==1.12.0
 python-crontab==2.5.1
 ```
 
