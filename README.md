@@ -26,6 +26,50 @@ This tool is designed to automate the management of SSL certificates for your do
 4. **Certbot**: Used for obtaining certificates from Let's Encrypt.
 5. **Boto3**: Python SDK for AWS, used for S3 interactions.
 
+### Step 1 — Installing Certbot
+
+Certbot recommends using their snap package for installation. Snap packages work on nearly all Linux distributions, but they require that you’ve installed `snapd` first in order to manage snap packages. Ubuntu 22.04 comes with support for snaps out of the box.
+
+1. **Update the snapd core**:
+   ```bash
+   sudo snap install core; sudo snap refresh core
+   ```
+
+2. **Remove any old certbot installation**:
+   If you’re working on a server that previously had an older version of certbot installed, you should remove it before going any further:
+   ```bash
+   sudo apt remove certbot
+   ```
+
+3. **Install the certbot package**:
+   ```bash
+   sudo snap install --classic certbot
+   ```
+
+4. **Link the certbot command to your path**:
+   Finally, you can link the certbot command from the snap install directory to your path, so you’ll be able to run it by just typing `certbot`. This isn’t necessary with all packages, but snaps tend to be less intrusive by default, so they don’t conflict with any other system packages by accident:
+   ```bash
+   sudo ln -s /snap/bin/certbot /usr/bin/certbot
+   ```
+
+### Step 2 — Installing Nginx
+
+1. **Update and upgrade the system packages**:
+   ```bash
+   sudo apt update && sudo apt upgrade
+   ```
+
+2. **Install Nginx**:
+   ```bash
+   sudo apt install nginx
+   ```
+
+3. **Start and enable the Nginx service**:
+   ```bash
+   sudo systemctl start nginx
+   sudo systemctl enable nginx
+   ```
+
 ## Configuration
 
 Ensure AWS CLI is set up with required profiles and permissions, the web server is installed and running, and Certbot is installed.
