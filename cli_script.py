@@ -23,21 +23,23 @@ def check_certificate_locally(domain):
     print(f"Certificate for {domain} not found locally.")
     return False
 
-def check_certificate_on_s3(domain, s3_bucket):
+def check_certificate_on_s3(domain, ip_address, s3_bucket):
     s3 = boto3.client('s3')
+    s3_path = f"certificate/{ip_address}/{domain}/"
 
     try:
-        s3.head_object(Bucket=s3_bucket, Key=f"{domain}/fullchain.pem")
-        s3.head_object(Bucket=s3_bucket, Key=f"{domain}/privkey.pem")
+        s3.head_object(Bucket=s3_bucket, Key=f"{s3_path}fullchain.pem")
+        s3.head_object(Bucket=s3_bucket, Key=f"{s3_path}privkey.pem")
         print(f"Certificate for {domain} found on S3.")
         return True
     except botocore.exceptions.ClientError:
         print(f"Certificate for {domain} not found on S3.")
         return False
 
-def download_certificate_from_s3(domain, s3_bucket):
+def download_certificate_from_s3(domain, ip_address, s3_bucket):
     s3 = boto3.client('s3')
     cert_dir = f"/etc/letsencrypt/live/{domain}"
+    s3_path = f"certificate/{ip_address}/{domain}/"
     cert_path = os.path.join(cert_dir, "fullchain.pem")
     privkey_path = os.path.join(cert_dir, "privkey.pem")
     
@@ -45,49 +47,40 @@ def download_certificate_from_s3(domain, s3_bucket):
         os.makedirs(cert_dir)
     
     try:
-        s3.download_file(s3_bucket, f"{domain}/fullchain.pem", cert_path)
-        s3.download_file(s3_bucket, f"{domain}/privkey.pem", privkey_path)
+        s3.download_file(s3_bucket, f"{s3_path}fullchain.pem", cert_path)
+        s3.download_file(s3_bucket, f"{s3_path}privkey.pem", privkey_path)
         print(f"Certificate for {domain} downloaded from S3.")
     except Exception as e:
         print(f"Error downloading certificate from S3: {e}")
         os.system(f"rm -rf {cert_dir}")
         sys.exit(1)
 
-def get_certificate_test(domain, email, s3_bucket):
+def get_certificate(domain, ip_address, email, s3_bucket):
     if not check_certificate_locally(domain):
-        if check_certificate_on_s3(domain, s3_bucket):
-            download_certificate_from_s3(domain, s3_bucket)
-        else:
-            print(f"Generating a new certificate for {domain}...")
-            call(["certbot", "--nginx", "-d", domain, "--agree-tos", "-m", email])
-
-def get_certificate(domain, email, s3_bucket):
-    if not check_certificate_locally(domain):
-        if check_certificate_on_s3(domain, s3_bucket):
-            download_certificate_from_s3(domain, s3_bucket)
+        if check_certificate_on_s3(domain, ip_address, s3_bucket):
+            download_certificate_from_s3(domain, ip_address, s3_bucket)
             return True  # Since the cert is now locally available
         else:
             print(f"Generating a new certificate for {domain}...")
             result = call(["certbot", "--nginx", "-d", domain, "--agree-tos", "-m", email])
             return result == 0  # True if certbot command was successful
     return True  # Certificate was found locally
-    
 
-def backup_to_s3(domain, s3_bucket):
+def backup_to_s3(domain, ip_address, s3_bucket):
     s3 = boto3.client('s3')
+    s3_path = f"certificate/{ip_address}/{domain}/"
     certs_path = f"/etc/letsencrypt/live/{domain}/"
     cert_file = os.path.join(certs_path, "fullchain.pem")
     privkey_file = os.path.join(certs_path, "privkey.pem")
 
     try:
-        s3.head_object(Bucket=s3_bucket, Key=f"{domain}/fullchain.pem")
+        s3.head_object(Bucket=s3_bucket, Key=f"{s3_path}fullchain.pem")
         print(f"Certificate for {domain} already backed up in S3.")
     except botocore.exceptions.ClientError:
         if os.path.exists(cert_file) and os.path.exists(privkey_file):
-            s3.upload_file(cert_file, s3_bucket, f"{domain}/fullchain.pem")
-            s3.upload_file(privkey_file, s3_bucket, f"{domain}/privkey.pem")
+            s3.upload_file(cert_file, s3_bucket, f"{s3_path}fullchain.pem")
+            s3.upload_file(privkey_file, s3_bucket, f"{s3_path}privkey.pem")
             print(f"Certificate for {domain} backed up to S3.")
-
 
 def setup_nginx(domain, port):
     config = f"""
@@ -124,7 +117,6 @@ server {{
     os.symlink(f"/etc/nginx/sites-available/{domain}", f"/etc/nginx/sites-enabled/{domain}")
     call(["nginx", "-s", "reload"])
 
-
 def setup_apache(domain, port):
     config = f"""
 <VirtualHost *:80>
@@ -152,7 +144,6 @@ def setup_apache(domain, port):
     os.symlink(f"/etc/apache2/sites-available/{domain}.conf", f"/etc/apache2/sites-enabled/{domain}.conf")
     call(["apache2ctl", "configtest"])
     call(["systemctl", "restart", "apache2"])
-        
 
 def main():
     parser = argparse.ArgumentParser(description="CLI tool to manage SSL certificates and web server config.")
@@ -161,17 +152,17 @@ def main():
     parser.add_argument("--email", required=True, help="Email for Let's Encrypt.")
     parser.add_argument("--s3-bucket", required=True, help="S3 bucket for certificate backup.")
     parser.add_argument("--server", required=True, choices=['nginx', 'apache'], help="Web server (nginx or apache).")
+    parser.add_argument("--ip-address", required=True, help="IP address for certificate organization.")
     args = parser.parse_args()
 
     if len(args.domains) != len(args.ports):
         print("Error: The number of domains must match the number of ports.")
         sys.exit(1)
 
-
     for domain, port in zip(args.domains, args.ports):
-        cert_success = get_certificate(domain, args.email, args.s3_bucket)
+        cert_success = get_certificate(domain, args.ip_address, args.email, args.s3_bucket)
         if cert_success:
-            backup_to_s3(domain, args.s3_bucket)
+            backup_to_s3(domain, args.ip_address, args.s3_bucket)
             if args.server == "nginx":
                 setup_nginx(domain, port)
             else:
@@ -179,14 +170,5 @@ def main():
         else:
             print(f"Failed to obtain certificate for {domain}. Skipping server setup.")
 
-    """
-    for domain, port in zip(args.domains, args.ports):
-        get_certificate(domain, args.email, args.s3_bucket)
-        backup_to_s3(domain, args.s3_bucket)
-        if args.server == "nginx":
-            setup_nginx(domain, port)
-        else:
-            setup_apache(domain, port)
-    """
 if __name__ == "__main__":
     main()
