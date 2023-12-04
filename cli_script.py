@@ -152,16 +152,9 @@ def main():
     parser.add_argument("--email", required=True, help="Email for Let's Encrypt.")
     parser.add_argument("--s3-bucket", required=True, help="S3 bucket for certificate backup.")
     parser.add_argument("--server", required=True, choices=['nginx', 'apache'], help="Web server (nginx or apache).")
-    #parser.add_argument("--ip-address", required=True, help="IP address for certificate organization.")
-    parser.add_argument("--ip-address", help="IP address for certificate organization.", required=False)
+    parser.add_argument("--ip-address", required=True, help="IP address for certificate organization.")
     args = parser.parse_args()
 
-    ip_address = args.ip_address if args.ip_address else os.getenv('MY_SERVER_IP')
-
-    if not ip_address:
-        print("Error: IP address not provided and not found in environment variables.")
-        sys.exit(1)
-        
     if len(args.domains) != len(args.ports):
         print("Error: The number of domains must match the number of ports.")
         sys.exit(1)
