@@ -6,6 +6,7 @@ import boto3
 from subprocess import call
 import botocore
 import sys
+import argparse
 
 def check_certificate_locally(domain):
     cert_dir = f"/etc/letsencrypt/live/{domain}"
@@ -152,9 +153,12 @@ def main():
     parser.add_argument("--email", required=True, help="Email for Let's Encrypt.")
     parser.add_argument("--s3-bucket", required=True, help="S3 bucket for certificate backup.")
     parser.add_argument("--server", required=True, choices=['nginx', 'apache'], help="Web server (nginx or apache).")
-    parser.add_argument("--ip-address", required=True, help="IP address for certificate organization.")
+    #parser.add_argument("--ip-address", required=True, help="IP address for certificate organization.")
+    parser.add_argument("--ip-address", help="IP address for certificate organization.", default=os.getenv('MY_IP_ENV_VAR'))
     args = parser.parse_args()
-
+    if not args.ip_address:
+        print("Error: IP address is required.")
+        sys.exit(1)
     if len(args.domains) != len(args.ports):
         print("Error: The number of domains must match the number of ports.")
         sys.exit(1)
