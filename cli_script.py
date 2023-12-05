@@ -63,7 +63,7 @@ def get_certificate(domain, ip_address, email, s3_bucket):
             return True  # Since the cert is now locally available
         else:
             print(f"Generating a new certificate for {domain}...")
-            result = call(["certbot", "--nginx", "-d", domain, "--agree-tos", "-m", email])
+            result = call(["certbot", "--nginx", "-d", domain, "--agree-tos", "-m", email,"--non-interactive", "--redirect"])
             return result == 0  # True if certbot command was successful
     return True  # Certificate was found locally
 
