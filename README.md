@@ -84,7 +84,7 @@ Ensure AWS CLI is set up with required profiles and permissions, the web server 
 
 2. **Run the SSL Certificate Manager Script**:
     ```bash
-    ./cli_script.py --domains your_domain1.com your_domain2.com --email your_email@example.com --ports 9000 9001 --s3-bucket your_s3_bucket_name --server nginx
+    ./cli_script.py --domains your_domain1.com your_domain2.com --email your_email@example.com --ports 9000 9001 --s3-bucket your_s3_bucket_name --server nginx --ip-address 8.8.8.8
     ```
 
 3. **Run the Backup Script**:
