@@ -97,15 +97,20 @@ server {{
 
     ssl_certificate /etc/letsencrypt/live/{domain}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/{domain}/privkey.pem;
-    #include /etc/letsencrypt/options-ssl-nginx.conf;
-    #ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-    
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
     location / {{
         proxy_pass http://localhost:{port};
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
         proxy_cache_bypass $http_upgrade;
     }}
 }}
@@ -117,6 +122,7 @@ server {{
         os.remove(f"/etc/nginx/sites-enabled/{domain}")
     os.symlink(f"/etc/nginx/sites-available/{domain}", f"/etc/nginx/sites-enabled/{domain}")
     call(["nginx", "-s", "reload"])
+
 
 def setup_apache(domain, port):
     config = f"""
